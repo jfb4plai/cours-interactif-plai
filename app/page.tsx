@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 type Step = 1 | 2 | 3;
 type Status = 'idle' | 'generating' | 'done' | 'error';
@@ -154,11 +155,16 @@ export default function Home() {
     <div className="min-h-screen bg-plai-cream">
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-3">
-          <span className="font-display font-extrabold text-plai-red text-xl leading-none">
-            PLAI
-          </span>
-          <div className="w-px h-5 bg-gray-200" />
+        <div className="max-w-3xl mx-auto px-6 py-2 flex items-center gap-4">
+          <Image
+            src="/logo-plai.jpg"
+            alt="PLAI — Pôle Liégeois d'Accompagnement vers une École Inclusive"
+            width={200}
+            height={80}
+            className="h-16 w-auto"
+            priority
+          />
+          <div className="w-px h-6 bg-gray-200" />
           <h1 className="font-display font-semibold text-plai-dark text-base leading-tight">
             Cours Interactif
           </h1>
@@ -502,11 +508,19 @@ export default function Home() {
       </main>
 
       {/* ── Footer ─────────────────────────────────────────── */}
-      <footer className="border-t border-gray-100 bg-white py-4 px-6 text-center">
-        <p className="text-xs text-gray-400">
-          Cours Interactif PLAI — Pôle Liégeois d'Accompagnement vers une École
-          Inclusive · Fédération Wallonie-Bruxelles
-        </p>
+      <footer className="border-t border-gray-100 bg-white py-4 px-6">
+        <div className="max-w-3xl mx-auto flex items-center justify-center gap-4">
+          <Image
+            src="/logo-plai.jpg"
+            alt="PLAI"
+            width={80}
+            height={32}
+            className="h-8 w-auto opacity-70"
+          />
+          <p className="text-xs text-gray-400">
+            Cours Interactif · Fédération Wallonie-Bruxelles
+          </p>
+        </div>
       </footer>
     </div>
   );

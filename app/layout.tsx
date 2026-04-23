@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Cours Interactif PLAI',
   description: 'Transformez vos cours en activités interactives pour vos élèves — PLAI, Fédération Wallonie-Bruxelles',
+  icons: {
+    icon: '/logo-plai.png',
+  },
 };
 
 export default function RootLayout({
