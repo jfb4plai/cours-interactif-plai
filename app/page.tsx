@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 type Step = 1 | 2 | 3;
 type Status = 'idle' | 'generating' | 'done' | 'error';
@@ -87,6 +89,11 @@ export default function Home() {
   const [htmlResult, setHtmlResult] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [charCount, setCharCount] = useState(0);
+
+  // Supabase save state
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Upload state
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -187,6 +194,38 @@ export default function Home() {
     setForm((prev) => ({ ...prev, contenu: '' }));
   };
 
+  // ── Supabase save ─────────────────────────────────────
+  const saveCourse = useCallback(async (html: string, formData: FormData) => {
+    setSaveStatus('saving');
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .insert({
+          titre: formData.titre,
+          matiere: formData.matiere || null,
+          niveau: formData.niveau || null,
+          enseignant: formData.enseignant || null,
+          html_content: html,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      setSavedId(data.id);
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
+  }, []);
+
+  const copyLink = () => {
+    if (!savedId) return;
+    const url = `${window.location.origin}/cours/${savedId}`;
+    navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2500);
+  };
+
   // ── Generation ────────────────────────────────────────
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -196,6 +235,8 @@ export default function Home() {
     setHtmlResult('');
     setCharCount(0);
     setErrorMsg('');
+    setSaveStatus('idle');
+    setSavedId(null);
 
     try {
       const response = await fetch('/api/generate', {
@@ -227,6 +268,7 @@ export default function Home() {
       }
 
       setStatus('done');
+      if (supabaseConfigured) saveCourse(html, form);
     } catch (e) {
       setStatus('error');
       setErrorMsg(
@@ -270,6 +312,8 @@ export default function Home() {
     setUploadStatus('idle');
     setUploadedFileName('');
     setUploadError('');
+    setSaveStatus('idle');
+    setSavedId(null);
   };
 
   return (
@@ -289,8 +333,13 @@ export default function Home() {
           <h1 className="font-display font-semibold text-plai-dark text-base leading-tight">
             Cours Interactif
           </h1>
-          <div className="ml-auto text-xs text-gray-400 hidden sm:block">
-            Fédération Wallonie-Bruxelles
+          <div className="ml-auto flex items-center gap-3">
+            <Link
+              href="/mes-cours"
+              className="text-sm font-medium text-gray-500 hover:text-plai-dark transition-colors hidden sm:block"
+            >
+              Mes cours →
+            </Link>
           </div>
         </div>
       </header>
@@ -667,7 +716,42 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Statut sauvegarde Supabase */}
+            <div className={`flex items-center gap-2 text-sm mb-4 ${
+              saveStatus === 'saving' ? 'text-gray-400' :
+              saveStatus === 'saved' ? 'text-plai-green' :
+              saveStatus === 'error' ? 'text-red-400' : 'hidden'
+            }`}>
+              {saveStatus === 'saving' && (
+                <><div className="w-3 h-3 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                Sauvegarde en cours…</>
+              )}
+              {saveStatus === 'saved' && <>💾 Cours sauvegardé</>}
+              {saveStatus === 'error' && <>⚠️ Sauvegarde échouée — téléchargez le fichier</>}
+            </div>
+
             <div className="card space-y-4">
+              {/* Lien partageable */}
+              {saveStatus === 'saved' && savedId && (
+                <div className="bg-plai-green/5 border border-plai-green/20 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-plai-dark mb-2">🔗 Lien direct pour vos élèves</p>
+                  <div className="flex gap-2">
+                    <code className="flex-1 text-xs bg-white border border-gray-100 rounded-lg px-3 py-2 truncate text-gray-600">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/cours/${savedId}` : '…'}
+                    </code>
+                    <button
+                      onClick={copyLink}
+                      className={`btn-secondary text-sm py-2 px-4 flex-shrink-0 ${linkCopied ? 'text-plai-green border-plai-green/30' : ''}`}
+                    >
+                      {linkCopied ? '✓ Copié !' : 'Copier'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Partagez ce lien — les élèves ouvrent le cours dans leur navigateur sans téléchargement.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <button
                   onClick={handleDownload}
@@ -677,22 +761,23 @@ export default function Home() {
                   Télécharger le cours (.html)
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-2">
-                  Un fichier .html à distribuer à vos élèves — s'ouvre dans
-                  Chrome, Firefox ou Edge.
+                  Fichier .html à distribuer — s'ouvre dans Chrome, Firefox ou Edge.
                 </p>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-gray-100 pt-4 flex gap-3">
                 <button
                   onClick={handlePreview}
-                  className="w-full btn-secondary flex items-center justify-center gap-2"
+                  className="flex-1 btn-secondary flex items-center justify-center gap-2"
                 >
-                  <span>👁</span>
-                  Aperçu dans un nouvel onglet
+                  <span>👁</span> Aperçu
                 </button>
-                <p className="text-xs text-gray-400 text-center mt-2">
-                  Visualisez le cours avant de le distribuer.
-                </p>
+                <Link
+                  href="/mes-cours"
+                  className="flex-1 btn-secondary flex items-center justify-center gap-2 text-center"
+                >
+                  📚 Mes cours
+                </Link>
               </div>
             </div>
 
