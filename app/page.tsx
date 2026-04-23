@@ -46,6 +46,9 @@ Plus c'est détaillé, meilleur sera le résultat.`;
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
+// Limite de texte extrait : ~80 000 car. ≈ 23 000 tokens — évite de dépasser la fenêtre de contexte Claude
+const MAX_EXTRACTED_CHARS = 80_000;
+
 const ACCEPTED_TYPES: Record<string, string> = {
   'application/pdf': 'PDF',
   'text/plain': 'TXT',
@@ -99,6 +102,7 @@ export default function Home() {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadError, setUploadError] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [uploadTruncated, setUploadTruncated] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +123,7 @@ export default function Home() {
   const processFile = useCallback(async (file: File) => {
     setUploadError('');
     setUploadedFileName('');
+    setUploadTruncated(false);
 
     if (!ACCEPTED_TYPES[file.type]) {
       setUploadStatus('error');
@@ -151,7 +156,12 @@ export default function Home() {
         );
       }
 
-      setForm((prev) => ({ ...prev, contenu: text }));
+      // Tronquer si le texte dépasse la limite
+      const truncated = text.length > MAX_EXTRACTED_CHARS;
+      const finalText = truncated ? text.slice(0, MAX_EXTRACTED_CHARS) : text;
+
+      setUploadTruncated(truncated);
+      setForm((prev) => ({ ...prev, contenu: finalText }));
       setUploadedFileName(file.name);
       setUploadStatus('done');
     } catch (e) {
@@ -312,6 +322,7 @@ export default function Home() {
     setUploadStatus('idle');
     setUploadedFileName('');
     setUploadError('');
+    setUploadTruncated(false);
     setSaveStatus('idle');
     setSavedId(null);
   };
@@ -585,12 +596,20 @@ export default function Home() {
                 </div>
 
                 {uploadStatus === 'done' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); clearUpload(); }}
-                    className="text-xs text-gray-400 hover:text-red-500 underline underline-offset-2 mb-3 block transition-colors"
-                  >
-                    ✕ Supprimer et recommencer
-                  </button>
+                  <div className="mb-3 space-y-2">
+                    {uploadTruncated && (
+                      <div className="p-3 bg-plai-amber/10 border border-plai-amber/30 rounded-xl text-xs text-plai-dark">
+                        ⚠️ <span className="font-semibold">Document tronqué</span> — seuls les {(MAX_EXTRACTED_CHARS / 1000).toFixed(0)} 000 premiers caractères ont été conservés.
+                        Pour de meilleurs résultats, travaillez chapitre par chapitre.
+                      </div>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); clearUpload(); }}
+                      className="text-xs text-gray-400 hover:text-red-500 underline underline-offset-2 block transition-colors"
+                    >
+                      ✕ Supprimer et recommencer
+                    </button>
+                  </div>
                 )}
 
                 {/* Séparateur */}

@@ -128,8 +128,8 @@ export default function MesCours() {
             </p>
             <p className="text-sm">
               {filter
-                ? 'Vérifiez l'orthographe du nom.'
-                : 'Générez votre premier cours depuis l'accueil.'}
+                ? "Vérifiez l'orthographe du nom."
+                : "Générez votre premier cours depuis l'accueil."}
             </p>
           </div>
         ) : (
