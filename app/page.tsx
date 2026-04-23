@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 
 type Step = 1 | 2 | 3;
 type Status = 'idle' | 'generating' | 'done' | 'error';
+type UploadStatus = 'idle' | 'extracting' | 'done' | 'error';
 
 interface FormData {
   titre: string;
@@ -32,13 +33,45 @@ const NIVEAUX = [
 
 const PLACEHOLDER_CONTENU = `Collez ici vos notes de cours, votre fiche, ou le contenu que vous souhaitez transformer.
 
-Exemples de ce que vous pouvez coller :
-- Un texte de cours (Word, PDF copié-collé)
-- Des notes prises lors de la préparation
-- Un plan de leçon détaillé
-- Des définitions et exemples
+Exemples :
+- Texte de cours (Word, PDF copié-collé)
+- Notes de préparation
+- Plan de leçon détaillé
+- Définitions et exemples
 
-Plus votre contenu est riche, meilleur sera le cours interactif généré.`;
+Plus c'est détaillé, meilleur sera le résultat.`;
+
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+const ACCEPTED_TYPES: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'text/plain': 'TXT',
+};
+
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist');
+
+  // Utilise le worker via CDN (évite les problèmes de bundling Next.js)
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  const pages: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (pageText) pages.push(pageText);
+  }
+
+  return pages.join('\n\n');
+}
 
 export default function Home() {
   const [step, setStep] = useState<Step>(1);
@@ -55,6 +88,13 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState('');
   const [charCount, setCharCount] = useState(0);
 
+  // Upload state
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [uploadError, setUploadError] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleChange =
     (field: keyof FormData) =>
     (
@@ -68,6 +108,86 @@ export default function Home() {
   const canGoStep2 = form.titre.trim().length >= 3;
   const canGenerate = form.contenu.trim().length >= 50;
 
+  // ── File upload logic ─────────────────────────────────
+  const processFile = useCallback(async (file: File) => {
+    setUploadError('');
+    setUploadedFileName('');
+
+    if (!ACCEPTED_TYPES[file.type]) {
+      setUploadStatus('error');
+      setUploadError('Format non supporté. Utilisez un PDF ou un fichier texte (.txt).');
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadStatus('error');
+      setUploadError(
+        `Fichier trop volumineux (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum : ${MAX_FILE_SIZE_MB} Mo.`
+      );
+      return;
+    }
+
+    setUploadStatus('extracting');
+
+    try {
+      let text = '';
+
+      if (file.type === 'text/plain') {
+        text = await file.text();
+      } else if (file.type === 'application/pdf') {
+        text = await extractPdfText(file);
+      }
+
+      if (!text.trim()) {
+        throw new Error(
+          'Aucun texte extrait. Le PDF est peut-être scanné (image). Copiez-collez le texte manuellement.'
+        );
+      }
+
+      setForm((prev) => ({ ...prev, contenu: text }));
+      setUploadedFileName(file.name);
+      setUploadStatus('done');
+    } catch (e) {
+      setUploadStatus('error');
+      setUploadError(
+        e instanceof Error
+          ? e.message
+          : 'Extraction impossible. Copiez-collez le texte manuellement.'
+      );
+    }
+  }, []);
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    e.target.value = '';
+  };
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) processFile(file);
+    },
+    [processFile]
+  );
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const clearUpload = () => {
+    setUploadStatus('idle');
+    setUploadedFileName('');
+    setUploadError('');
+    setForm((prev) => ({ ...prev, contenu: '' }));
+  };
+
+  // ── Generation ────────────────────────────────────────
   const handleGenerate = async () => {
     if (!canGenerate) return;
 
@@ -86,9 +206,7 @@ export default function Home() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(
-          data.error || `Erreur serveur (${response.status})`
-        );
+        throw new Error(data.error || `Erreur serveur (${response.status})`);
       }
 
       const reader = response.body!.getReader();
@@ -149,6 +267,9 @@ export default function Home() {
     setHtmlResult('');
     setCharCount(0);
     setErrorMsg('');
+    setUploadStatus('idle');
+    setUploadedFileName('');
+    setUploadError('');
   };
 
   return (
@@ -228,8 +349,7 @@ export default function Home() {
               </h2>
               <p className="text-gray-500 text-sm leading-relaxed">
                 Remplissez les informations de base, collez votre contenu, et
-                recevez un cours HTML interactif prêt à distribuer à vos
-                élèves.
+                recevez un cours HTML interactif prêt à distribuer à vos élèves.
               </p>
             </div>
 
@@ -307,15 +427,16 @@ export default function Home() {
           <div>
             <div className="mb-8">
               <h2 className="font-display font-bold text-2xl text-plai-dark mb-2">
-                Collez votre contenu de cours
+                Votre contenu de cours
               </h2>
               <p className="text-gray-500 text-sm leading-relaxed">
-                Texte de cours, notes, fiche de révision, plan de leçon… Tout
-                fonctionne. Plus c'est détaillé, meilleur sera le résultat.
+                Téléversez un PDF ou un fichier texte, ou collez directement vos notes.
+                Plus c'est détaillé, meilleur sera le résultat.
               </p>
             </div>
 
             <div className="card space-y-5">
+              {/* Objectifs */}
               <div>
                 <label className="field-label">
                   Objectifs d'apprentissage{' '}
@@ -323,39 +444,134 @@ export default function Home() {
                 </label>
                 <textarea
                   className="field-input resize-none"
-                  rows={3}
-                  placeholder="Ex : Savoir identifier les différentes pièces de bœuf. Connaître les règles d'hygiène de base."
+                  rows={2}
+                  placeholder="Ex : Savoir identifier les pièces de bœuf. Connaître les règles d'hygiène de base."
                   value={form.objectifs}
                   onChange={handleChange('objectifs')}
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Ces objectifs apparaîtront sur la page d'accueil du cours.
+                  Apparaîtront sur la page d'accueil du cours.
                 </p>
               </div>
 
+              {/* ── Zone upload ── */}
               <div>
                 <label className="field-label">
                   Contenu du cours <span className="text-plai-red">*</span>
                 </label>
+
+                {/* Drop zone */}
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-150 mb-3 ${
+                    isDragging
+                      ? 'border-plai-red bg-plai-red/5'
+                      : uploadStatus === 'done'
+                      ? 'border-plai-green bg-plai-green/5'
+                      : uploadStatus === 'error'
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-plai-red/50 hover:bg-plai-red/5'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.txt,text/plain,application/pdf"
+                    className="hidden"
+                    onChange={handleFileInput}
+                  />
+
+                  {uploadStatus === 'idle' && (
+                    <>
+                      <div className="text-3xl mb-2">📄</div>
+                      <p className="text-sm font-semibold text-plai-dark mb-1">
+                        Glissez un fichier ici ou cliquez pour parcourir
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        PDF ou TXT · Maximum {MAX_FILE_SIZE_MB} Mo
+                      </p>
+                    </>
+                  )}
+
+                  {uploadStatus === 'extracting' && (
+                    <>
+                      <div className="flex justify-center mb-2">
+                        <div className="w-8 h-8 border-3 border-plai-red border-t-transparent rounded-full animate-spin" />
+                      </div>
+                      <p className="text-sm font-semibold text-plai-dark">
+                        Extraction du texte en cours…
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Selon la taille du PDF, cela peut prendre quelques secondes.
+                      </p>
+                    </>
+                  )}
+
+                  {uploadStatus === 'done' && (
+                    <>
+                      <div className="text-3xl mb-2">✅</div>
+                      <p className="text-sm font-semibold text-plai-green">
+                        Texte extrait depuis : {uploadedFileName}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {form.contenu.length.toLocaleString('fr-BE')} caractères — vérifiez et modifiez si besoin ci-dessous
+                      </p>
+                    </>
+                  )}
+
+                  {uploadStatus === 'error' && (
+                    <>
+                      <div className="text-3xl mb-2">⚠️</div>
+                      <p className="text-sm font-semibold text-red-600">
+                        {uploadError}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Cliquez pour réessayer avec un autre fichier
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {uploadStatus === 'done' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearUpload(); }}
+                    className="text-xs text-gray-400 hover:text-red-500 underline underline-offset-2 mb-3 block transition-colors"
+                  >
+                    ✕ Supprimer et recommencer
+                  </button>
+                )}
+
+                {/* Séparateur */}
+                <div className="flex items-center gap-3 my-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">ou tapez / collez directement</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                {/* Textarea */}
                 <textarea
                   className="field-input resize-y"
-                  rows={14}
+                  rows={10}
                   placeholder={PLACEHOLDER_CONTENU}
                   value={form.contenu}
-                  onChange={handleChange('contenu')}
+                  onChange={(e) => {
+                    handleChange('contenu')(e);
+                    if (uploadStatus === 'done') setUploadStatus('idle');
+                  }}
                 />
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-xs text-gray-400">
-                    Minimum 50 caractères — idéalement 500 à 3000 caractères
+                    Minimum 50 caractères — idéalement 500 à 3 000 caractères
                   </p>
                   <span
                     className={`text-xs font-medium ${
-                      form.contenu.length >= 50
-                        ? 'text-plai-green'
-                        : 'text-gray-400'
+                      form.contenu.length >= 50 ? 'text-plai-green' : 'text-gray-400'
                     }`}
                   >
-                    {form.contenu.length} car.
+                    {form.contenu.length.toLocaleString('fr-BE')} car.
                   </span>
                 </div>
               </div>
@@ -363,9 +579,9 @@ export default function Home() {
 
             <div className="mt-4 p-4 bg-plai-amber/10 rounded-xl border border-plai-amber/20">
               <p className="text-sm text-plai-dark">
-                <span className="font-semibold">💡 Conseil :</span> Vous pouvez
-                coller un texte depuis Word, un PDF (Ctrl+A → Ctrl+C dans le
-                lecteur), ou taper directement vos notes de cours.
+                <span className="font-semibold">💡 Note :</span> Les PDF scannés
+                (photos de documents) ne contiennent pas de texte extractible.
+                Dans ce cas, copiez-collez le texte manuellement.
               </p>
             </div>
 
@@ -376,9 +592,9 @@ export default function Home() {
               <button
                 className="btn-primary"
                 onClick={handleGenerate}
-                disabled={!canGenerate}
+                disabled={!canGenerate || uploadStatus === 'extracting'}
               >
-                Générer le cours →
+                {uploadStatus === 'extracting' ? 'Extraction…' : 'Générer le cours →'}
               </button>
             </div>
           </div>
@@ -485,12 +701,8 @@ export default function Home() {
                 📤 Comment distribuer ce cours ?
               </p>
               <ul className="text-gray-600 space-y-1 list-none">
-                <li>
-                  • Envoyez le fichier .html par email ou Teams à vos élèves
-                </li>
-                <li>
-                  • Déposez-le sur votre ENT (Moodle, Teams, Google Classroom…)
-                </li>
+                <li>• Envoyez le fichier .html par email ou Teams à vos élèves</li>
+                <li>• Déposez-le sur votre ENT (Moodle, Teams, Google Classroom…)</li>
                 <li>• Les élèves l'ouvrent avec un double-clic — aucune installation</li>
               </ul>
             </div>
