@@ -41,39 +41,44 @@ STRUCTURE DE NAVIGATION — CRITIQUE
 RÈGLE ABSOLUE SUR LES CLASSES HTML :
 • Le PREMIER module (accueil) doit avoir : class="module active"
 • Tous les autres modules doivent avoir : class="module"
-• Exemple : <div class="module active"> ... </div>  ← premier uniquement
-•           <div class="module"> ... </div>          ← tous les autres
+• Exemple : <div class="module active"> ... </div>  ← PREMIER UNIQUEMENT, avec "active"
+•           <div class="module"> ... </div>          ← tous les autres, SANS "active"
 
 CSS OBLIGATOIRE :
   .module { display: none; }
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
-JS DE NAVIGATION OBLIGATOIRE — placer dans <script> juste avant </body> :
-  var current = 0;
-  var modules = document.querySelectorAll('.module');
-  var total = modules.length;
-
+JS DE NAVIGATION OBLIGATOIRE — copier EXACTEMENT ce code dans <script> juste avant </body> :
   function goTo(n) {
-    if (!modules || modules.length === 0) return;
-    modules[current].classList.remove('active');
-    current = Math.max(0, Math.min(n, total - 1));
-    modules[current].classList.add('active');
+    var mods = document.querySelectorAll('.module');
+    var cur = parseInt(document.body.dataset.current || '0');
+    if (mods.length === 0) return;
+    mods[cur].classList.remove('active');
+    var next = Math.max(0, Math.min(n, mods.length - 1));
+    mods[next].classList.add('active');
+    document.body.dataset.current = String(next);
     updateNav();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function updateNav() {
+    var mods = document.querySelectorAll('.module');
+    var cur = parseInt(document.body.dataset.current || '0');
+    var total = mods.length;
     var prev = document.getElementById('nav-prev');
     var next = document.getElementById('nav-next');
     var count = document.getElementById('nav-count');
     var bar = document.getElementById('progress-bar');
-    if (prev) prev.disabled = current === 0;
-    if (next) next.disabled = current === total - 1;
-    if (count) count.textContent = (current + 1) + ' / ' + total;
-    if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
+    if (prev) prev.disabled = cur === 0;
+    if (next) next.disabled = cur === total - 1;
+    if (count) count.textContent = (cur + 1) + ' / ' + total;
+    if (bar) bar.style.width = (total > 1 ? Math.round((cur / (total - 1)) * 100) : 100) + '%';
   }
 
-  updateNav();
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.dataset.current = '0';
+    updateNav();
+  });
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%)
@@ -97,11 +102,11 @@ HTML de la navbar :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUCTURE DES MODULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MODULE 0 — Accueil (class="module")
+MODULE 0 — Accueil (class="module active") ← OBLIGATOIRE : "active" sur ce premier div uniquement
 • Grand titre du cours (h1, rouge, Bricolage Grotesque 3rem)
 • Pastille : matière + niveau
 • Liste des objectifs avec ✓
-• Bouton large "Commencer →" onclick="goTo(1)"
+• Bouton large type="button" onclick="goTo(1)" — JAMAIS disabled sur ce bouton
 
 MODULES 1 à N — Contenu (class="module")
 Chaque module DOIT contenir :
