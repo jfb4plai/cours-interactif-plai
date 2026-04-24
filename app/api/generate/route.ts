@@ -38,17 +38,20 @@ Google Fonts (@import en début de <style>) :
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUCTURE DE NAVIGATION — CRITIQUE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLE ABSOLUE : chaque section .module a class="module" et est visible par défaut en CSS.
-Le JS gère l'affichage en ajoutant/retirant la classe "active".
+RÈGLE ABSOLUE SUR LES CLASSES HTML :
+• Le PREMIER module (accueil) doit avoir : class="module active"
+• Tous les autres modules doivent avoir : class="module"
+• Exemple : <div class="module active"> ... </div>  ← premier uniquement
+•           <div class="module"> ... </div>          ← tous les autres
 
 CSS OBLIGATOIRE :
   .module { display: none; }
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
-JS DE NAVIGATION OBLIGATOIRE (copier-coller EXACT — ne pas modifier) :
-  // Variables globales — accessibles depuis les onclick du HTML
+JS DE NAVIGATION OBLIGATOIRE — placer dans <script> juste avant </body> :
   var current = 0;
-  var modules, total;
+  var modules = document.querySelectorAll('.module');
+  var total = modules.length;
 
   function goTo(n) {
     if (!modules || modules.length === 0) return;
@@ -68,18 +71,9 @@ JS DE NAVIGATION OBLIGATOIRE (copier-coller EXACT — ne pas modifier) :
     if (next) next.disabled = current === total - 1;
     if (count) count.textContent = (current + 1) + ' / ' + total;
     if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
-    document.querySelectorAll('.nav-dot').forEach(function(d, i) { d.classList.toggle('active', i === current); });
   }
 
-  // INITIALISATION — DOMContentLoaded garantit que les .module existent dans le DOM
-  document.addEventListener('DOMContentLoaded', function() {
-    modules = document.querySelectorAll('.module');
-    total = modules.length;
-    if (modules.length > 0) {
-      modules[0].classList.add('active');
-    }
-    updateNav();
-  });
+  updateNav();
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%)
