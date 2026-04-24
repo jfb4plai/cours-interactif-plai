@@ -49,32 +49,45 @@ CSS OBLIGATOIRE :
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
 JS DE NAVIGATION OBLIGATOIRE — copier EXACTEMENT ce code dans <script> juste avant </body> :
-  var current = 0;
+  (function() {
+    var current = 0;
 
-  function goTo(n) {
-    var mods = document.querySelectorAll('.module');
-    if (!mods.length) return;
-    mods[current].classList.remove('active');
-    current = Math.max(0, Math.min(n, mods.length - 1));
-    mods[current].classList.add('active');
-    updateNav();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    function goTo(n) {
+      var mods = document.querySelectorAll('.module');
+      if (!mods.length) return;
+      mods[current].classList.remove('active');
+      current = Math.max(0, Math.min(n, mods.length - 1));
+      mods[current].classList.add('active');
+      updateNav();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-  function updateNav() {
-    var mods = document.querySelectorAll('.module');
-    var total = mods.length;
-    var prev = document.getElementById('nav-prev');
-    var next = document.getElementById('nav-next');
-    var count = document.getElementById('nav-count');
-    var bar = document.getElementById('progress-bar');
-    if (prev) prev.disabled = current === 0;
-    if (next) next.disabled = current === total - 1;
-    if (count) count.textContent = (current + 1) + ' / ' + total;
-    if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
-  }
+    function updateNav() {
+      var mods = document.querySelectorAll('.module');
+      var total = mods.length;
+      var prev = document.getElementById('nav-prev');
+      var next = document.getElementById('nav-next');
+      var count = document.getElementById('nav-count');
+      var bar = document.getElementById('progress-bar');
+      if (prev) prev.disabled = current === 0;
+      if (next) next.disabled = current === total - 1;
+      if (count) count.textContent = (current + 1) + ' / ' + total;
+      if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
+    }
 
-  document.addEventListener('DOMContentLoaded', function() { updateNav(); });
+    document.addEventListener('DOMContentLoaded', function() {
+      var prev = document.getElementById('nav-prev');
+      var next = document.getElementById('nav-next');
+      if (prev) prev.addEventListener('click', function() { goTo(current - 1); });
+      if (next) next.addEventListener('click', function() { goTo(current + 1); });
+      document.querySelectorAll('.btn-next').forEach(function(btn) {
+        btn.addEventListener('click', function() { goTo(current + 1); });
+      });
+      var startBtn = document.getElementById('btn-start');
+      if (startBtn) startBtn.addEventListener('click', function() { goTo(1); });
+      updateNav();
+    });
+  })();
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%)
@@ -90,10 +103,11 @@ HTML de la navbar :
       <span id="nav-count">1 / N</span>
     </div>
     <div class="nav-right">
-      <button id="nav-prev" onclick="goTo(current-1)">←</button>
-      <button id="nav-next" onclick="goTo(current+1)">→</button>
+      <button id="nav-prev" type="button">←</button>
+      <button id="nav-next" type="button">→</button>
     </div>
   </nav>
+  IMPORTANT : PAS de onclick sur nav-prev et nav-next — le JS les branche via addEventListener.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUCTURE DES MODULES
@@ -102,7 +116,8 @@ MODULE 0 — Accueil (class="module active") ← OBLIGATOIRE : "active" sur ce p
 • Grand titre du cours (h1, rouge, Bricolage Grotesque 3rem)
 • Pastille : matière + niveau
 • Liste des objectifs avec ✓
-• Bouton large type="button" onclick="goTo(1)" — JAMAIS disabled sur ce bouton
+• Bouton : <button id="btn-start" type="button">Commencer →</button>
+  IMPORTANT : PAS de onclick — le JS le branche via addEventListener sur id="btn-start"
 
 MODULES 1 à N — Contenu (class="module")
 Chaque module DOIT contenir :
@@ -111,7 +126,8 @@ Chaque module DOIT contenir :
   3. Encadré coloré ("À retenir" / "Attention !" / "Exemple")
   4. Quiz interactif (voir spec ci-dessous)
   5. Tooltips sur les termes techniques
-  6. Bouton "Module suivant →" onclick="goTo(current+1)"
+  6. Bouton : <button class="btn-next" type="button">Module suivant →</button>
+     IMPORTANT : PAS de onclick — le JS branche tous les .btn-next via addEventListener
 
 MODULE FINAL — Révision (class="module")
 • Récapitulatif visuel (cartes par module)
