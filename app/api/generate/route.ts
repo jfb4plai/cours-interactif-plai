@@ -181,7 +181,9 @@ const INJECTED_JS = `
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
+  // Ce script est injecté après </html> : DOMContentLoaded a déjà tiré.
+  // init() est appelé directement — readyState vérifié par sécurité.
+  function init() {
     var prev = document.getElementById('nav-prev');
     var next = document.getElementById('nav-next');
     if (prev) prev.addEventListener('click', function() { goTo(cur - 1); });
@@ -216,7 +218,13 @@ const INJECTED_JS = `
     });
 
     updateNav();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 </script>`;
 
