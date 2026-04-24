@@ -19,6 +19,7 @@ RÈGLES TECHNIQUES ABSOLUES
 • 100% autonome : tout le CSS et JS dans le fichier — aucun fichier externe sauf Google Fonts
 • Fonctionne sans serveur, s'ouvre directement dans un navigateur
 • Compatible Chrome, Firefox, Edge
+• TOUT LE JAVASCRIPT doit être dans un seul bloc <script> placé juste avant </body> — JAMAIS dans <head>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DESIGN SYSTEM
@@ -44,12 +45,13 @@ CSS OBLIGATOIRE :
   .module { display: none; }
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
-JS DE NAVIGATION OBLIGATOIRE :
-  let current = 0;
-  const modules = document.querySelectorAll('.module');
-  const total = modules.length;
+JS DE NAVIGATION OBLIGATOIRE (copier-coller EXACT — ne pas modifier) :
+  // Variables globales — accessibles depuis les onclick du HTML
+  var current = 0;
+  var modules, total;
 
   function goTo(n) {
+    if (!modules || modules.length === 0) return;
     modules[current].classList.remove('active');
     current = Math.max(0, Math.min(n, total - 1));
     modules[current].classList.add('active');
@@ -58,17 +60,24 @@ JS DE NAVIGATION OBLIGATOIRE :
   }
 
   function updateNav() {
-    document.getElementById('nav-prev').disabled = current === 0;
-    document.getElementById('nav-next').disabled = current === total - 1;
-    document.getElementById('nav-count').textContent = (current + 1) + ' / ' + total;
-    const pct = Math.round((current / (total - 1)) * 100);
-    document.getElementById('progress-bar').style.width = pct + '%';
-    document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    var prev = document.getElementById('nav-prev');
+    var next = document.getElementById('nav-next');
+    var count = document.getElementById('nav-count');
+    var bar = document.getElementById('progress-bar');
+    if (prev) prev.disabled = current === 0;
+    if (next) next.disabled = current === total - 1;
+    if (count) count.textContent = (current + 1) + ' / ' + total;
+    if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
+    document.querySelectorAll('.nav-dot').forEach(function(d, i) { d.classList.toggle('active', i === current); });
   }
 
-  // INITIALISATION — premier module visible au chargement
+  // INITIALISATION — DOMContentLoaded garantit que les .module existent dans le DOM
   document.addEventListener('DOMContentLoaded', function() {
-    modules[0].classList.add('active');
+    modules = document.querySelectorAll('.module');
+    total = modules.length;
+    if (modules.length > 0) {
+      modules[0].classList.add('active');
+    }
     updateNav();
   });
 
@@ -131,9 +140,9 @@ HTML :
     <p class="quiz-exp" style="display:none">Explication de la bonne réponse.</p>
   </div>
 
-JS :
-  let score = 0, answered = 0, total_q = 0;
-  document.addEventListener('DOMContentLoaded', () => {
+JS (variables globales — ne pas utiliser let/const pour score, answered, total_q) :
+  var score = 0, answered = 0, total_q = 0;
+  document.addEventListener('DOMContentLoaded', function() {
     total_q = document.querySelectorAll('.quiz').length;
   });
 
