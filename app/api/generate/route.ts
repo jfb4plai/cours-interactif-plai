@@ -49,36 +49,32 @@ CSS OBLIGATOIRE :
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
 JS DE NAVIGATION OBLIGATOIRE — copier EXACTEMENT ce code dans <script> juste avant </body> :
+  var current = 0;
+
   function goTo(n) {
     var mods = document.querySelectorAll('.module');
-    var cur = parseInt(document.body.dataset.current || '0');
-    if (mods.length === 0) return;
-    mods[cur].classList.remove('active');
-    var next = Math.max(0, Math.min(n, mods.length - 1));
-    mods[next].classList.add('active');
-    document.body.dataset.current = String(next);
+    if (!mods.length) return;
+    mods[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, mods.length - 1));
+    mods[current].classList.add('active');
     updateNav();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function updateNav() {
     var mods = document.querySelectorAll('.module');
-    var cur = parseInt(document.body.dataset.current || '0');
     var total = mods.length;
     var prev = document.getElementById('nav-prev');
     var next = document.getElementById('nav-next');
     var count = document.getElementById('nav-count');
     var bar = document.getElementById('progress-bar');
-    if (prev) prev.disabled = cur === 0;
-    if (next) next.disabled = cur === total - 1;
-    if (count) count.textContent = (cur + 1) + ' / ' + total;
-    if (bar) bar.style.width = (total > 1 ? Math.round((cur / (total - 1)) * 100) : 100) + '%';
+    if (prev) prev.disabled = current === 0;
+    if (next) next.disabled = current === total - 1;
+    if (count) count.textContent = (current + 1) + ' / ' + total;
+    if (bar) bar.style.width = (total > 1 ? Math.round((current / (total - 1)) * 100) : 100) + '%';
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    document.body.dataset.current = '0';
-    updateNav();
-  });
+  document.addEventListener('DOMContentLoaded', function() { updateNav(); });
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%)
