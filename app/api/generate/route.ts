@@ -16,10 +16,10 @@ MISSION : Transformer le contenu de cours fourni par l'enseignant en un fichier 
 RÈGLES TECHNIQUES ABSOLUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 • Le fichier commence OBLIGATOIREMENT par <!DOCTYPE html> et se termine par </html>
-• 100% autonome : tout le CSS et JS dans le fichier — aucun fichier externe sauf Google Fonts
-• Fonctionne sans serveur, s'ouvre directement dans un navigateur
+• CSS uniquement dans <style> dans le <head> — aucun fichier externe sauf Google Fonts
+• ⚠️ NE GÉNÈRE AUCUN JAVASCRIPT — le JS est injecté automatiquement par le système
+• Ne mets AUCUN <script> dans le HTML généré
 • Compatible Chrome, Firefox, Edge
-• TOUT LE JAVASCRIPT doit être dans un seul bloc <script> placé juste avant </body> — JAMAIS dans <head>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DESIGN SYSTEM
@@ -36,54 +36,17 @@ Google Fonts (@import en début de <style>) :
   'Bricolage Grotesque' pour les titres, 'DM Sans' pour le texte
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STRUCTURE DE NAVIGATION — CRITIQUE
+STRUCTURE DE NAVIGATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RÈGLE ABSOLUE SUR LES CLASSES HTML :
-• Le PREMIER module (accueil) doit avoir : class="module active"
-• Tous les autres modules doivent avoir : class="module"
-• Exemple : <div class="module active"> ... </div>  ← PREMIER UNIQUEMENT, avec "active"
-•           <div class="module"> ... </div>          ← tous les autres, SANS "active"
-
 CSS OBLIGATOIRE :
   .module { display: none; }
   .module.active { display: flex; flex-direction: column; min-height: 100vh; padding: 80px 24px 40px; }
 
-JS DE NAVIGATION OBLIGATOIRE — copier EXACTEMENT ce code dans <script> juste avant </body> :
+CLASSES HTML :
+• Le PREMIER module : class="module active"
+• Tous les autres : class="module"
 
-  window.current = 0;
-
-  window.goTo = function(n) {
-    var mods = document.querySelectorAll('.module');
-    if (!mods.length) return;
-    mods[window.current].classList.remove('active');
-    window.current = Math.max(0, Math.min(n, mods.length - 1));
-    mods[window.current].classList.add('active');
-    window.updateNav();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  window.updateNav = function() {
-    var mods = document.querySelectorAll('.module');
-    var total = mods.length;
-    var prev = document.getElementById('nav-prev');
-    var next = document.getElementById('nav-next');
-    var count = document.getElementById('nav-count');
-    var bar = document.getElementById('progress-bar');
-    if (prev) prev.disabled = window.current === 0;
-    if (next) next.disabled = window.current === total - 1;
-    if (count) count.textContent = (window.current + 1) + ' / ' + total;
-    if (bar) bar.style.width = (total > 1 ? Math.round((window.current / (total - 1)) * 100) : 100) + '%';
-  };
-
-  document.addEventListener('DOMContentLoaded', window.updateNav);
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Structure :
-  [Logo "PLAI" rouge | Titre du cours] ---- [barre progression] ---- [← X/N →]
-
-HTML de la navbar :
+NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%) :
   <nav id="navbar">
     <div class="nav-left"><span class="nav-logo">PLAI</span><span class="nav-title">TITRE_ICI</span></div>
     <div class="nav-center">
@@ -91,19 +54,19 @@ HTML de la navbar :
       <span id="nav-count">1 / N</span>
     </div>
     <div class="nav-right">
-      <button id="nav-prev" type="button" onclick="window.goTo(window.current-1)">←</button>
-      <button id="nav-next" type="button" onclick="window.goTo(window.current+1)">→</button>
+      <button id="nav-prev" type="button">←</button>
+      <button id="nav-next" type="button">→</button>
     </div>
   </nav>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUCTURE DES MODULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MODULE 0 — Accueil (class="module active") ← OBLIGATOIRE : "active" sur ce premier div uniquement
+MODULE 0 — Accueil (class="module active")
 • Grand titre du cours (h1, rouge, Bricolage Grotesque 3rem)
 • Pastille : matière + niveau
 • Liste des objectifs avec ✓
-• Bouton : <button type="button" onclick="window.goTo(1)">Commencer le cours →</button>
+• Bouton : <button class="nav-start" type="button">Commencer le cours →</button>
 
 MODULES 1 à N — Contenu (class="module")
 Chaque module DOIT contenir :
@@ -112,88 +75,37 @@ Chaque module DOIT contenir :
   3. Encadré coloré ("À retenir" / "Attention !" / "Exemple")
   4. Quiz interactif (voir spec ci-dessous)
   5. Tooltips sur les termes techniques
-  6. Bouton : <button type="button" onclick="window.goTo(window.current+1)">Module suivant →</button>
+  6. Bouton : <button class="nav-next" type="button">Module suivant →</button>
 
 MODULE FINAL — Révision (class="module")
 • Récapitulatif visuel (cartes par module)
 • Quiz de révision (4-6 questions)
-• Score final affiché
+• Score final : <span id="score-final"></span>
 • Message animé si score ≥ 60%
 • Mention PLAI en bas
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-QUIZ — IMPLÉMENTATION COMPLÈTE
+QUIZ — HTML UNIQUEMENT (pas de JS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HTML :
   <div class="quiz">
     <p class="quiz-q">Question ici ?</p>
     <div class="quiz-opts">
-      <button onclick="answer(this, false)">Option A</button>
-      <button onclick="answer(this, true)">Option B — bonne réponse</button>
-      <button onclick="answer(this, false)">Option C</button>
+      <button class="quiz-option" type="button" data-correct="false">Option A</button>
+      <button class="quiz-option" type="button" data-correct="true">Option B — bonne réponse</button>
+      <button class="quiz-option" type="button" data-correct="false">Option C</button>
     </div>
-    <div class="quiz-fb" style="display:none"></div>
-    <p class="quiz-exp" style="display:none">Explication de la bonne réponse.</p>
+    <div class="quiz-fb"></div>
+    <p class="quiz-exp">Explication de la bonne réponse.</p>
   </div>
 
-JS (variables globales — ne pas utiliser let/const pour score, answered, total_q) :
-  var score = 0, answered = 0, total_q = 0;
-  document.addEventListener('DOMContentLoaded', function() {
-    total_q = document.querySelectorAll('.quiz').length;
-  });
-
-  function answer(btn, correct) {
-    const quiz = btn.closest('.quiz');
-    if (quiz.dataset.done) return;
-    quiz.dataset.done = '1';
-    answered++;
-    quiz.querySelectorAll('button').forEach(b => b.disabled = true);
-    const fb = quiz.querySelector('.quiz-fb');
-    const exp = quiz.querySelector('.quiz-exp');
-    if (correct) {
-      score++;
-      btn.style.background = 'var(--green)'; btn.style.color = '#fff';
-      fb.textContent = '✅ Correct !'; fb.style.color = 'var(--green)';
-    } else {
-      btn.style.background = 'var(--red)'; btn.style.color = '#fff';
-      fb.textContent = '❌ Incorrect.'; fb.style.color = 'var(--red)';
-    }
-    fb.style.display = 'block';
-    exp.style.display = 'block';
-    if (answered === total_q) {
-      const pct = Math.round(score / total_q * 100);
-      const el = document.getElementById('score-final');
-      if (el) { el.textContent = score + '/' + total_q + ' (' + pct + '%)'; }
-    }
-  }
+  data-correct="true" sur LA bonne réponse, data-correct="false" sur les autres.
+  NE PAS mettre de onclick sur les boutons quiz.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TOOLTIPS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HTML : <span class="tip" data-tip="Définition courte">terme</span>
-CSS : .tip { border-bottom: 2px dotted var(--blue); cursor: help; position: relative; }
-JS  : (utiliser position:fixed pour éviter le clipping)
-  document.addEventListener('DOMContentLoaded', () => {
-    const tooltip = document.createElement('div');
-    tooltip.id = 'tooltip';
-    tooltip.style.cssText = 'position:fixed;background:#1E1E2E;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;max-width:280px;z-index:9999;display:none;pointer-events:none';
-    document.body.appendChild(tooltip);
-    document.querySelectorAll('.tip').forEach(el => {
-      el.addEventListener('mouseenter', e => {
-        tooltip.textContent = el.dataset.tip;
-        tooltip.style.display = 'block';
-        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
-        tooltip.style.top = (e.clientY - 40) + 'px';
-      });
-      el.addEventListener('mouseleave', () => tooltip.style.display = 'none');
-      el.addEventListener('click', e => {
-        tooltip.textContent = el.dataset.tip;
-        tooltip.style.display = tooltip.style.display === 'none' ? 'block' : 'none';
-        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
-        tooltip.style.top = (e.clientY - 40) + 'px';
-      });
-    });
-  });
+  <span class="tip" data-tip="Définition courte">terme</span>
+  CSS : .tip { border-bottom: 2px dotted var(--blue); cursor: help; }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STYLE RÉDACTIONNEL FWB
@@ -212,6 +124,101 @@ FORMAT DE RÉPONSE — CRITIQUE
 • AUCUN texte avant ou après
 • AUCUNE balise markdown (\`\`\`html ou \`\`\`)
 • HTML complet, riche, avec contenu réel issu du cours fourni`;
+
+const INJECTED_JS = `
+<script>
+(function() {
+  var cur = 0;
+
+  function goTo(n) {
+    var mods = document.querySelectorAll('.module');
+    if (!mods.length) return;
+    mods[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(n, mods.length - 1));
+    mods[cur].classList.add('active');
+    updateNav();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateNav() {
+    var mods = document.querySelectorAll('.module');
+    var total = mods.length;
+    var prev = document.getElementById('nav-prev');
+    var next = document.getElementById('nav-next');
+    var count = document.getElementById('nav-count');
+    var bar = document.getElementById('progress-bar');
+    if (prev) prev.disabled = cur === 0;
+    if (next) next.disabled = cur === total - 1;
+    if (count) count.textContent = (cur + 1) + ' / ' + total;
+    if (bar) bar.style.width = (total > 1 ? Math.round(cur / (total - 1) * 100) : 100) + '%';
+  }
+
+  var score = 0, answered = 0;
+
+  function handleQuiz(btn) {
+    var quiz = btn.closest('.quiz');
+    if (!quiz || quiz.dataset.done) return;
+    quiz.dataset.done = '1';
+    answered++;
+    var correct = btn.dataset.correct === 'true';
+    quiz.querySelectorAll('.quiz-option').forEach(function(b) { b.disabled = true; });
+    var fb = quiz.querySelector('.quiz-fb');
+    var exp = quiz.querySelector('.quiz-exp');
+    if (correct) {
+      score++;
+      btn.style.background = 'var(--green)'; btn.style.color = '#fff';
+      if (fb) { fb.textContent = '✅ Correct !'; fb.style.color = 'var(--green)'; fb.style.display = 'block'; }
+    } else {
+      btn.style.background = 'var(--red)'; btn.style.color = '#fff';
+      if (fb) { fb.textContent = '❌ Incorrect.'; fb.style.color = 'var(--red)'; fb.style.display = 'block'; }
+    }
+    if (exp) exp.style.display = 'block';
+    var total_q = document.querySelectorAll('.quiz').length;
+    if (answered === total_q) {
+      var pct = Math.round(score / total_q * 100);
+      var el = document.getElementById('score-final');
+      if (el) el.textContent = score + '/' + total_q + ' (' + pct + '%)';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var prev = document.getElementById('nav-prev');
+    var next = document.getElementById('nav-next');
+    if (prev) prev.addEventListener('click', function() { goTo(cur - 1); });
+    if (next) next.addEventListener('click', function() { goTo(cur + 1); });
+    document.querySelectorAll('.nav-start').forEach(function(btn) {
+      btn.addEventListener('click', function() { goTo(1); });
+    });
+    document.querySelectorAll('.nav-next').forEach(function(btn) {
+      btn.addEventListener('click', function() { goTo(cur + 1); });
+    });
+    document.querySelectorAll('.quiz-option').forEach(function(btn) {
+      btn.addEventListener('click', function() { handleQuiz(btn); });
+    });
+
+    // Tooltips
+    var tt = document.createElement('div');
+    tt.style.cssText = 'position:fixed;background:#1E1E2E;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;max-width:280px;z-index:9999;display:none;pointer-events:none;line-height:1.4';
+    document.body.appendChild(tt);
+    document.querySelectorAll('.tip[data-tip]').forEach(function(el) {
+      el.addEventListener('mouseenter', function(e) {
+        tt.textContent = el.dataset.tip; tt.style.display = 'block';
+        tt.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
+        tt.style.top = (e.clientY - 40) + 'px';
+      });
+      el.addEventListener('mouseleave', function() { tt.style.display = 'none'; });
+      el.addEventListener('click', function(e) {
+        tt.textContent = el.dataset.tip;
+        tt.style.display = tt.style.display === 'none' ? 'block' : 'none';
+        tt.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
+        tt.style.top = (e.clientY - 40) + 'px';
+      });
+    });
+
+    updateNav();
+  });
+})();
+</script>`;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -268,6 +275,9 @@ Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.`;
         });
 
         await response.finalMessage();
+
+        // Injection du JS après la réponse Claude (fonctionne même après </html>)
+        controller.enqueue(encoder.encode(INJECTED_JS));
         controller.close();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erreur inconnue';
