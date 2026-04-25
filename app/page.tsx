@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
+import { PLAI_SCRIPT } from '@/lib/plai-runtime';
 
 type Step = 1 | 2 | 3;
 type Status = 'idle' | 'generating' | 'done' | 'error';
@@ -277,8 +278,16 @@ export default function Home() {
         throw new Error(html.replace('ERREUR_GENERATION:', '').trim());
       }
 
+      // Injection du JS PLAI avant </body> — dans le document, exécution garantie
+      const finalHtml = html.includes('</body>')
+        ? html.replace(/<\/body>/i, PLAI_SCRIPT + '</body>')
+        : html.includes('</html>')
+        ? html.replace(/<\/html>/i, PLAI_SCRIPT + '</html>')
+        : html + PLAI_SCRIPT;
+
+      setHtmlResult(finalHtml);
       setStatus('done');
-      if (supabaseConfigured) saveCourse(html, form);
+      if (supabaseConfigured) saveCourse(finalHtml, form);
     } catch (e) {
       setStatus('error');
       setErrorMsg(

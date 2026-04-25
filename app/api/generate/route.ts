@@ -310,9 +310,6 @@ Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.`;
         });
 
         await response.finalMessage();
-
-        // Injection du JS après la réponse Claude (fonctionne même après </html>)
-        controller.enqueue(encoder.encode(INJECTED_JS));
         controller.close();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Erreur inconnue';
