@@ -60,6 +60,18 @@ NAVBAR FIXE (position:fixed; top:0; z-index:100; width:100%) :
   </nav>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOMBRE DE MODULES — RÈGLE ABSOLUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tu dois générer EXACTEMENT cette séquence de <div class="module"> :
+  • 1 module d'accueil   → class="module active"
+  • 4 à 7 modules de contenu → class="module"  (un par grand thème du cours)
+  • 1 module de révision → class="module"
+
+TOTAL : minimum 6 <div class="module">, maximum 9.
+⛔ Ne génère JAMAIS un cours avec 1 seul module.
+⛔ Ne t'arrête PAS avant d'avoir fermé le dernier </div> du module de révision et le </body></html> final.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STRUCTURE DES MODULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MODULE 0 — Accueil (class="module active")
