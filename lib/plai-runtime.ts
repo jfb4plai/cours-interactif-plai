@@ -45,7 +45,11 @@ export const PLAI_SCRIPT = `<script>
       if (fb) { fb.textContent = '✅ Correct !'; fb.style.color = '#16A34A'; fb.style.display = 'block'; }
     } else {
       btn.style.background = '#D94F30'; btn.style.color = '#fff';
-      if (fb) { fb.textContent = '❌ Incorrect.'; fb.style.color = '#D94F30'; fb.style.display = 'block'; }
+      var hint = quiz.dataset.hint;
+      if (fb) {
+        fb.textContent = '❌ Pas tout à fait.' + (hint ? ' 💡 ' + hint : '');
+        fb.style.color = '#D94F30'; fb.style.display = 'block';
+      }
     }
     if (exp) exp.style.display = 'block';
     var total_q = document.querySelectorAll('.quiz').length;

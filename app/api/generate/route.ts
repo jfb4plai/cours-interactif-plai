@@ -69,16 +69,21 @@ MODULE 0 — Accueil (class="module active")
 • Bouton : <button data-nav="start" type="button">Commencer le cours →</button>
 
 MODULES 1 à N — Contenu (class="module")
-Chaque module DOIT contenir :
+⚠️ CRITIQUE : TOUT LE TEXTE PÉDAGOGIQUE DOIT ÊTRE RÉDIGÉ DANS LE HTML.
+Ne laisse AUCUN module vide. AUCUN placeholder. AUCUN commentaire vide.
+Tu dois écrire le contenu complet du cours dans chaque module.
+
+Chaque module DOIT contenir (200 à 400 mots de contenu pédagogique réel) :
   1. En-tête : pastille numéro + titre h2
-  2. Contenu : explications claires, listes, exemples concrets
-  3. Encadré coloré ("À retenir" / "Attention !" / "Exemple")
+  2. TEXTE RÉEL : 3 à 5 paragraphes <p> expliquant le sujet issu du cours fourni
+     + au moins une liste <ul> avec 4 à 6 points concrets du cours
+  3. Encadré coloré ("À retenir" / "Attention !" / "Exemple") avec texte réel
   4. Quiz interactif (voir spec ci-dessous)
-  5. Tooltips sur les termes techniques
+  5. Tooltips sur les termes techniques clés
   6. Bouton : <button data-nav="next" type="button">Module suivant →</button>
 
 MODULE FINAL — Révision (class="module")
-• Récapitulatif visuel (cartes par module)
+• Récapitulatif visuel (cartes par module, texte réel)
 • Quiz de révision (4-6 questions)
 • Score final : <span id="score-final"></span>
 • Message animé si score ≥ 60%
@@ -87,7 +92,7 @@ MODULE FINAL — Révision (class="module")
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUIZ — HTML UNIQUEMENT (pas de JS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  <div class="quiz">
+  <div class="quiz" data-hint="Question socratique ou indice qui guide sans donner la réponse">
     <p class="quiz-q">Question ici ?</p>
     <div class="quiz-opts">
       <button class="quiz-option" type="button" data-correct="false">Option A</button>
@@ -99,6 +104,10 @@ QUIZ — HTML UNIQUEMENT (pas de JS)
   </div>
 
   data-correct="true" sur LA bonne réponse, data-correct="false" sur les autres.
+  data-hint : formule une question qui fait réfléchir l'élève sans lui donner la réponse.
+    Exemples : "Rappelle-toi la définition vue en début de module." /
+               "Quelle est la différence entre X et Y ?" /
+               "Quel critère dois-tu vérifier en premier ?"
   NE PAS mettre de onclick sur les boutons quiz.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -124,136 +133,6 @@ FORMAT DE RÉPONSE — CRITIQUE
 • AUCUN texte avant ou après
 • AUCUNE balise markdown (\`\`\`html ou \`\`\`)
 • HTML complet, riche, avec contenu réel issu du cours fourni`;
-
-const INJECTED_JS = `
-<script>
-(function() {
-  var cur = 0;
-
-  function goTo(n) {
-    var mods = document.querySelectorAll('.module');
-    if (!mods.length) return;
-    mods[cur].classList.remove('active');
-    cur = Math.max(0, Math.min(n, mods.length - 1));
-    mods[cur].classList.add('active');
-    updateNav();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function updateNav() {
-    var mods = document.querySelectorAll('.module');
-    var total = mods.length;
-    var prev = document.getElementById('nav-prev');
-    var next = document.getElementById('nav-next');
-    var count = document.getElementById('nav-count');
-    var bar = document.getElementById('progress-bar');
-    if (prev) prev.disabled = cur === 0;
-    if (next) next.disabled = cur === total - 1;
-    if (count) count.textContent = (cur + 1) + ' / ' + total;
-    if (bar) bar.style.width = (total > 1 ? Math.round(cur / (total - 1) * 100) : 100) + '%';
-  }
-
-  var score = 0, answered = 0;
-
-  function handleQuiz(btn) {
-    var quiz = btn.closest('.quiz');
-    if (!quiz || quiz.dataset.done) return;
-    quiz.dataset.done = '1';
-    answered++;
-    var correct = btn.dataset.correct === 'true';
-    quiz.querySelectorAll('.quiz-option').forEach(function(b) { b.disabled = true; });
-    var fb = quiz.querySelector('.quiz-fb');
-    var exp = quiz.querySelector('.quiz-exp');
-    if (correct) {
-      score++;
-      btn.style.background = 'var(--green)'; btn.style.color = '#fff';
-      if (fb) { fb.textContent = '✅ Correct !'; fb.style.color = 'var(--green)'; fb.style.display = 'block'; }
-    } else {
-      btn.style.background = 'var(--red)'; btn.style.color = '#fff';
-      if (fb) { fb.textContent = '❌ Incorrect.'; fb.style.color = 'var(--red)'; fb.style.display = 'block'; }
-    }
-    if (exp) exp.style.display = 'block';
-    var total_q = document.querySelectorAll('.quiz').length;
-    if (answered === total_q) {
-      var pct = Math.round(score / total_q * 100);
-      var el = document.getElementById('score-final');
-      if (el) el.textContent = score + '/' + total_q + ' (' + pct + '%)';
-    }
-  }
-
-  // Ce script est injecté après </html> : DOMContentLoaded a déjà tiré.
-  // init() est appelé directement — readyState vérifié par sécurité.
-  function init() {
-    console.log('[PLAI] init() — modules:', document.querySelectorAll('.module').length);
-
-    // Navbar arrows
-    var prev = document.getElementById('nav-prev');
-    var next = document.getElementById('nav-next');
-    if (prev) prev.addEventListener('click', function() { goTo(cur - 1); });
-    if (next) next.addEventListener('click', function() { goTo(cur + 1); });
-
-    // Boutons "Commencer" — stratégie 1: data-nav, 2: classes connues, 3: texte
-    var startBound = false;
-    document.querySelectorAll('[data-nav="start"], .nav-start, .btn-start').forEach(function(btn) {
-      btn.addEventListener('click', function() { goTo(1); });
-      startBound = true;
-    });
-    if (!startBound) {
-      document.querySelectorAll('.module button').forEach(function(btn) {
-        if (/commencer|démarrer|start/i.test(btn.textContent) && !btn.dataset.correct) {
-          btn.addEventListener('click', function() { goTo(1); });
-        }
-      });
-    }
-
-    // Boutons "Module suivant" — stratégie 1: data-nav, 2: classes connues, 3: texte
-    var nextBound = false;
-    document.querySelectorAll('[data-nav="next"], .nav-next, .btn-next, .btn-nav').forEach(function(btn) {
-      btn.addEventListener('click', function() { goTo(cur + 1); });
-      nextBound = true;
-    });
-    if (!nextBound) {
-      document.querySelectorAll('.module button').forEach(function(btn) {
-        if (/suivant|next/i.test(btn.textContent) && !btn.dataset.correct) {
-          btn.addEventListener('click', function() { goTo(cur + 1); });
-        }
-      });
-    }
-
-    // Quiz
-    document.querySelectorAll('.quiz-option, [data-correct]').forEach(function(btn) {
-      btn.addEventListener('click', function() { handleQuiz(btn); });
-    });
-
-    // Tooltips
-    var tt = document.createElement('div');
-    tt.style.cssText = 'position:fixed;background:#1E1E2E;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;max-width:280px;z-index:9999;display:none;pointer-events:none;line-height:1.4';
-    document.body.appendChild(tt);
-    document.querySelectorAll('.tip[data-tip]').forEach(function(el) {
-      el.addEventListener('mouseenter', function(e) {
-        tt.textContent = el.dataset.tip; tt.style.display = 'block';
-        tt.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
-        tt.style.top = (e.clientY - 40) + 'px';
-      });
-      el.addEventListener('mouseleave', function() { tt.style.display = 'none'; });
-      el.addEventListener('click', function(e) {
-        tt.textContent = el.dataset.tip;
-        tt.style.display = tt.style.display === 'none' ? 'block' : 'none';
-        tt.style.left = Math.min(e.clientX + 12, window.innerWidth - 300) + 'px';
-        tt.style.top = (e.clientY - 40) + 'px';
-      });
-    });
-
-    updateNav();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
-</script>`;
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
