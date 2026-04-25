@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 export const runtime = 'nodejs';
 
 const client = new Anthropic({
@@ -191,7 +191,7 @@ Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.`;
       try {
         const response = client.messages.stream({
           model,
-          max_tokens: 16000,
+          max_tokens: 32000,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userMessage }],
         });
