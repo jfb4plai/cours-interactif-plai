@@ -279,11 +279,13 @@ export default function Home() {
       }
 
       // Injection du JS PLAI avant </body> — dans le document, exécution garantie
-      const finalHtml = html.includes('</body>')
-        ? html.replace(/<\/body>/i, PLAI_SCRIPT + '</body>')
-        : html.includes('</html>')
-        ? html.replace(/<\/html>/i, PLAI_SCRIPT + '</html>')
-        : html + PLAI_SCRIPT;
+      const marker = '<!-- PLAI-JS-INJECTED -->';
+      const injection = marker + PLAI_SCRIPT;
+      const finalHtml = html.toLowerCase().includes('</body>')
+        ? html.replace(/<\/body>/i, injection + '</body>')
+        : html.toLowerCase().includes('</html>')
+        ? html.replace(/<\/html>/i, injection + '</html>')
+        : html + injection;
 
       setHtmlResult(finalHtml);
       setStatus('done');
