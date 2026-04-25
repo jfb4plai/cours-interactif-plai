@@ -98,6 +98,17 @@ MODULE FINAL — Révision (class="module")
 • Quiz de révision (4-6 questions)
 • Score final : <span id="score-final"></span>
 • Message animé si score ≥ 60%
+• Bloc interactif OBLIGATOIRE — copie exactement ce HTML :
+  <div class="recap-tools" style="margin-top:28px;border-top:1px solid #eee;padding-top:20px">
+    <p style="font-weight:600;margin-bottom:10px">📝 Tes résultats</p>
+    <input id="student-name" type="text" placeholder="Ton prénom" style="border:1px solid #ddd;border-radius:8px;padding:8px 14px;font-size:1em;width:200px;margin-right:10px">
+    <button id="btn-results" type="button" style="background:#2C2A28;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-size:0.9em">📊 Voir mes résultats</button>
+    <div id="results-output" style="display:none"></div>
+    <div id="remediation" style="display:none"></div>
+    <hr style="margin:20px 0;border:none;border-top:1px solid #eee">
+    <button id="btn-flash" type="button" style="background:#D94F30;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-size:0.9em">📚 Envoyer les questions vers FlashFWB</button>
+    <p style="font-size:0.8em;color:#888;margin-top:6px">Toutes les questions du cours seront importées dans FlashFWB pour la révision espacée.</p>
+  </div>
 • Mention PLAI en bas
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -147,7 +158,7 @@ FORMAT DE RÉPONSE — CRITIQUE
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { titre, matiere, niveau, enseignant, objectifs, contenu } = body;
+  const { titre, matiere, niveau, enseignant, objectifs, contenu, accessible } = body;
 
   if (!titre || !contenu) {
     return Response.json(
@@ -180,7 +191,24 @@ CONTENU DU COURS :
 ${contenu}
 
 Génère maintenant le fichier HTML complet et interactif.
-Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.`;
+Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.${accessible ? `
+
+━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ MODE ACCESSIBLE ACTIVÉ
+━━━━━━━━━━━━━━━━━━━━━━━
+Adapte tout le HTML pour des élèves en difficulté de lecture (dyslexie, TDAH) :
+• Police : 'Lexend' (via Google Fonts) à la place de 'DM Sans' — plus lisible pour les dys
+• Taille de texte corps : 18px minimum
+• Interligne (line-height) : 1.9
+• Letter-spacing : 0.03em — espacement légèrement augmenté
+• Paragraphes : 1 à 2 phrases MAXIMUM par <p>
+• Listes : maximum 3 items par <ul>
+• Fond des modules : blanc pur (#fff), contraste maximum
+• Boutons : taille 18px, padding généreux, contour visible
+• 1 seul quiz par module de contenu (pas plus)
+• Phrases : 12 mots maximum par phrase
+• Texte aligné à gauche (text-align:left partout — jamais justify)
+• Mots complexes : toujours accompagnés d'un tooltip .tip[data-tip]` : ''}`;
 
   const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
 

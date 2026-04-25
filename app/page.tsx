@@ -17,6 +17,7 @@ interface FormData {
   enseignant: string;
   objectifs: string;
   contenu: string;
+  accessible: boolean;
 }
 
 const NIVEAUX = [
@@ -89,6 +90,7 @@ export default function Home() {
     enseignant: '',
     objectifs: '',
     contenu: '',
+    accessible: false,
   });
   const [htmlResult, setHtmlResult] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -478,6 +480,28 @@ export default function Home() {
                   value={form.enseignant}
                   onChange={handleChange('enseignant')}
                 />
+              </div>
+
+              {/* Mode accessible */}
+              <div
+                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                  form.accessible
+                    ? 'bg-blue-50 border-blue-200'
+                    : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setForm((prev) => ({ ...prev, accessible: !prev.accessible }))}
+              >
+                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all ${
+                  form.accessible ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                }`}>
+                  {form.accessible && <span className="text-white text-xs font-bold">✓</span>}
+                </div>
+                <div>
+                  <p className="font-medium text-plai-dark text-sm">Mode accessible (dyslexie / TDAH)</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Police Lexend, texte 18 px, interligne élargi, phrases courtes, contraste renforcé.
+                  </p>
+                </div>
               </div>
             </div>
 
