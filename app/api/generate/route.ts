@@ -85,13 +85,12 @@ MODULES 1 à N — Contenu (class="module")
 Ne laisse AUCUN module vide. AUCUN placeholder. AUCUN commentaire vide.
 Tu dois écrire le contenu complet du cours dans chaque module.
 
-Chaque module DOIT contenir (200 à 400 mots de contenu pédagogique réel) :
+Chaque module DOIT contenir (100 à 150 mots max de contenu pédagogique réel) :
   1. En-tête : pastille numéro + titre h2
-  2. TEXTE RÉEL : 3 à 5 paragraphes <p> expliquant le sujet issu du cours fourni
-     + au moins une liste <ul> avec 4 à 6 points concrets du cours
-  3. Encadré coloré ("À retenir" / "Attention !" / "Exemple") avec texte réel
-  4. Quiz interactif (voir spec ci-dessous)
-  5. Tooltips sur les termes techniques clés
+  2. TEXTE RÉEL : 2 paragraphes <p> + une liste <ul> avec 3 à 4 points concrets
+  3. Un encadré court ("À retenir" / "Attention !" / "Exemple") — 1 à 2 phrases
+  4. Quiz interactif (voir spec ci-dessous) — 1 seule question par module de contenu
+  5. Tooltips sur 2-3 termes techniques clés
   6. Bouton : <button data-nav="next" type="button">Module suivant →</button>
 
 MODULE FINAL — Révision (class="module")
@@ -191,7 +190,7 @@ Commence DIRECTEMENT par <!DOCTYPE html> — aucun texte avant.`;
       try {
         const response = client.messages.stream({
           model,
-          max_tokens: 32000,
+          max_tokens: 64000,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userMessage }],
         });
