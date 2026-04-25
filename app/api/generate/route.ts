@@ -66,7 +66,7 @@ MODULE 0 — Accueil (class="module active")
 • Grand titre du cours (h1, rouge, Bricolage Grotesque 3rem)
 • Pastille : matière + niveau
 • Liste des objectifs avec ✓
-• Bouton : <button class="nav-start" type="button">Commencer le cours →</button>
+• Bouton : <button data-nav="start" type="button">Commencer le cours →</button>
 
 MODULES 1 à N — Contenu (class="module")
 Chaque module DOIT contenir :
@@ -75,7 +75,7 @@ Chaque module DOIT contenir :
   3. Encadré coloré ("À retenir" / "Attention !" / "Exemple")
   4. Quiz interactif (voir spec ci-dessous)
   5. Tooltips sur les termes techniques
-  6. Bouton : <button class="nav-next" type="button">Module suivant →</button>
+  6. Bouton : <button data-nav="next" type="button">Module suivant →</button>
 
 MODULE FINAL — Révision (class="module")
 • Récapitulatif visuel (cartes par module)
@@ -184,17 +184,44 @@ const INJECTED_JS = `
   // Ce script est injecté après </html> : DOMContentLoaded a déjà tiré.
   // init() est appelé directement — readyState vérifié par sécurité.
   function init() {
+    console.log('[PLAI] init() — modules:', document.querySelectorAll('.module').length);
+
+    // Navbar arrows
     var prev = document.getElementById('nav-prev');
     var next = document.getElementById('nav-next');
     if (prev) prev.addEventListener('click', function() { goTo(cur - 1); });
     if (next) next.addEventListener('click', function() { goTo(cur + 1); });
-    document.querySelectorAll('.nav-start').forEach(function(btn) {
+
+    // Boutons "Commencer" — stratégie 1: data-nav, 2: classes connues, 3: texte
+    var startBound = false;
+    document.querySelectorAll('[data-nav="start"], .nav-start, .btn-start').forEach(function(btn) {
       btn.addEventListener('click', function() { goTo(1); });
+      startBound = true;
     });
-    document.querySelectorAll('.nav-next').forEach(function(btn) {
+    if (!startBound) {
+      document.querySelectorAll('.module button').forEach(function(btn) {
+        if (/commencer|démarrer|start/i.test(btn.textContent) && !btn.dataset.correct) {
+          btn.addEventListener('click', function() { goTo(1); });
+        }
+      });
+    }
+
+    // Boutons "Module suivant" — stratégie 1: data-nav, 2: classes connues, 3: texte
+    var nextBound = false;
+    document.querySelectorAll('[data-nav="next"], .nav-next, .btn-next, .btn-nav').forEach(function(btn) {
       btn.addEventListener('click', function() { goTo(cur + 1); });
+      nextBound = true;
     });
-    document.querySelectorAll('.quiz-option').forEach(function(btn) {
+    if (!nextBound) {
+      document.querySelectorAll('.module button').forEach(function(btn) {
+        if (/suivant|next/i.test(btn.textContent) && !btn.dataset.correct) {
+          btn.addEventListener('click', function() { goTo(cur + 1); });
+        }
+      });
+    }
+
+    // Quiz
+    document.querySelectorAll('.quiz-option, [data-correct]').forEach(function(btn) {
       btn.addEventListener('click', function() { handleQuiz(btn); });
     });
 
